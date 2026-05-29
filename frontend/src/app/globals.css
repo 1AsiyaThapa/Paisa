@@ -1,0 +1,78 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    zoom: 0.8;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900;
+    background-image:
+      radial-gradient(circle at top, rgba(248, 250, 252, 0.9), rgba(248, 250, 252, 0.96)),
+      linear-gradient(180deg, rgba(254, 242, 242, 0.7), rgba(248, 250, 252, 0));
+  }
+
+  ::selection {
+    @apply bg-red-100 text-red-900;
+  }
+}
+
+@layer components {
+  .app-page {
+    @apply space-y-6;
+  }
+
+  .app-page-header {
+    @apply mb-8 flex flex-col gap-2 md:flex-row md:items-end md:justify-between;
+  }
+
+  .app-page-title {
+    @apply text-3xl font-bold tracking-tight text-slate-900;
+  }
+
+  .app-page-copy {
+    @apply text-sm text-slate-500 md:text-base;
+  }
+
+  .app-surface {
+    @apply rounded-2xl border border-gray-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04),0_8px_24px_-12px_rgba(15,23,42,0.12)] ring-1 ring-gray-900/5;
+  }
+
+  .app-surface-muted {
+    @apply rounded-2xl border border-slate-200/80 bg-slate-50/80;
+  }
+
+  .app-chip {
+    @apply inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-medium text-slate-600;
+  }
+}
+
+/* Compensate for `zoom: 0.8` on <html>: viewport units (vh/vw) measure the
+   pre-zoom viewport, so 100vh visually fills only 80% of the screen.
+   125 * 0.8 = 100, restoring full-viewport sizing for screen-height utilities.
+   Placed outside @layer so it overrides Tailwind's utility layer. */
+.h-screen {
+  height: 125vh;
+}
+
+.min-h-screen {
+  min-height: 125vh;
+}
+
+.max-h-screen {
+  max-height: 125vh;
+}
+
+.h-dvh {
+  height: 125dvh;
+}
+
+.min-h-dvh {
+  min-height: 125dvh;
+}
