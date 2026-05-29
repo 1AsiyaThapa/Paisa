@@ -19,14 +19,26 @@ async function apiRequest<T>(
 ): Promise<T> {
   const url = `${BASE_URL}${endpoint}`;
 
+  // Get token from localStorage for cross-domain auth
+  const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null;
+
   let response: Response;
   try {
     response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
       },
       credentials: 'include',
       ...options,
+      // Merge headers if options has headers
+      ...(options?.headers ? {
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          ...options.headers,
+        }
+      } : {}),
     });
   } catch (error) {
     if (error instanceof TypeError && error.message === 'Failed to fetch') {
@@ -83,6 +95,10 @@ export const authService = {
       method: 'POST',
       body: JSON.stringify({ email, password, remember_me }),
     });
+    // Store token for cross-domain auth
+    if (typeof window !== 'undefined' && response.access_token) {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, response.access_token);
+    }
     return response.user;
   },
 
@@ -96,6 +112,10 @@ export const authService = {
       method: 'POST',
       body: JSON.stringify(userData),
     });
+    // Store token for cross-domain auth
+    if (typeof window !== 'undefined' && response.access_token) {
+      localStorage.setItem(STORAGE_KEYS.AUTH_TOKEN, response.access_token);
+    }
     return response.user;
   },
 
@@ -140,10 +160,12 @@ export const authService = {
 
   async checkAuthStatus(): Promise<User | null> {
     try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null;
       const response = await fetch(`${BASE_URL}/users/me`, {
         credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
       });
 

@@ -4,7 +4,7 @@ from typing import Annotated
 import httpx
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Cookie, Depends, HTTPException, Request, status
 from jose import JWTError, jwt
 
 from app.core.config import settings
@@ -57,13 +57,21 @@ def decode_token(token: str) -> str:
         )
 
 
-def get_current_user_id(auth_token: str | None = Cookie(None)) -> str:
-    """FastAPI dependency to get the current user ID from the cookie"""
-    if not auth_token:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
-        )
-    return decode_token(auth_token)
+def get_current_user_id(request: Request, auth_token: str | None = Cookie(None)) -> str:
+    """FastAPI dependency to get the current user ID from cookie or Bearer token"""
+    # Try Bearer token from Authorization header first (for cross-domain requests)
+    auth_header = request.headers.get("Authorization")
+    if auth_header and auth_header.startswith("Bearer "):
+        token = auth_header.split(" ", 1)[1]
+        return decode_token(token)
+
+    # Fall back to cookie
+    if auth_token:
+        return decode_token(auth_token)
+
+    raise HTTPException(
+        status_code=status.HTTP_401_UNAUTHORIZED, detail="Not authenticated"
+    )
 
 
 CurrentUserID = Annotated[str, Depends(get_current_user_id)]

@@ -90,15 +90,9 @@ async def google_callback(
 
         redirect_url = f"{settings.FRONTEND_URL}/dashboard"
 
+        # Pass token via URL param so frontend can store it (cross-domain cookie workaround)
+        redirect_url = f"{settings.FRONTEND_URL}/auth/callback?token={token_data.access_token}"
         response = RedirectResponse(url=redirect_url)
-        response.set_cookie(
-            key="auth_token",
-            value=token_data.access_token,
-            max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
-            httponly=True,
-            secure=False,
-            samesite="lax",
-        )
         return response
 
     except Exception:
@@ -286,8 +280,8 @@ async def signup_with_email(
         value=access_token,
         max_age=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
     )
     return token_data
 
@@ -335,8 +329,8 @@ async def login_with_email(
         value=access_token,
         max_age=cookie_max_age,
         httponly=True,
-        secure=False,
-        samesite="lax",
+        secure=True,
+        samesite="none",
     )
     return token_data
 
