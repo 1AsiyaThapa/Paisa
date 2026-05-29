@@ -31,7 +31,17 @@ class Settings:
 
     @property
     def ASYNC_DATABASE_URL(self) -> str:
-        return self.DATABASE_URL.replace("pymysql", "aiomysql")
+        # Support both PostgreSQL and MySQL connection strings
+        url = self.DATABASE_URL
+        if "postgresql" in url or "postgres" in url:
+            # Replace postgresql:// or postgresql+psycopg2:// with postgresql+asyncpg://
+            if "+asyncpg" not in url:
+                url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://")
+                url = url.replace("postgresql://", "postgresql+asyncpg://")
+                url = url.replace("postgres://", "postgresql+asyncpg://")
+            return url
+        # MySQL fallback
+        return url.replace("pymysql", "aiomysql")
 
 
 settings = Settings()

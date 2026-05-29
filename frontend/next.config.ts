@@ -16,6 +16,12 @@ const nextConfig: NextConfig = {
         pathname: '/uploads/**',
       },
       {
+        // Render backend — replace with your actual Render subdomain
+        protocol: 'https',
+        hostname: '*.onrender.com',
+        pathname: '/uploads/**',
+      },
+      {
         protocol: 'https',
         hostname: 'lh3.googleusercontent.com',
         pathname: '/**',
