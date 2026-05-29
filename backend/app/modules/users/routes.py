@@ -65,6 +65,7 @@ async def update_current_user(
 
 
 @router.post("/me/picture", response_model=UserResponse)
+@router.post("/me/picture/", response_model=UserResponse)
 async def upload_profile_picture(
     db: DBSession,
     user_id: CurrentUserID,
@@ -83,7 +84,7 @@ async def upload_profile_picture(
             status_code=status.HTTP_404_NOT_FOUND, detail="User not found"
         )
 
-    upload_path = Path("uploads/profiles")
+    upload_path = Path(settings.PROFILES_DIR)
     upload_path.mkdir(parents=True, exist_ok=True)
 
     file_ext = Path(file.filename or "").suffix or ".jpg"

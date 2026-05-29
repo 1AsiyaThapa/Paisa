@@ -9,7 +9,7 @@ from typing import Literal, cast
 import numpy as np
 import pandas as pd
 from anyio.to_thread import run_sync
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from google import genai
 from google.genai import types
@@ -459,8 +459,9 @@ async def get_category_proportions(
 
 
 @router.post("/scan")
+@router.post("/scan/")
 async def scan_receipt(
-    file: UploadFile,
+    file: UploadFile = File(...),
     db: DBSession,
     user_id: CurrentUserID,
 ):
