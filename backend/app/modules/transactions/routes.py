@@ -461,9 +461,9 @@ async def get_category_proportions(
 @router.post("/scan")
 @router.post("/scan/")
 async def scan_receipt(
-    file: UploadFile = File(...),
     db: DBSession,
     user_id: CurrentUserID,
+    file: UploadFile = File(...),
 ):
     if (
         not file.filename
