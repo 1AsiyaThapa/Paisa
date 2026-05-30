@@ -27,6 +27,9 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL_ID: str = "gemini-2.5-flash"
 
+    SUPABASE_URL: str = os.getenv("SUPABASE_URL", "")
+    SUPABASE_SERVICE_KEY: str = os.getenv("SUPABASE_SERVICE_KEY", "")
+
     @property
     def UPLOAD_BASE_DIR(self) -> str:
         return "/tmp/uploads" if os.getenv("VERCEL") == "1" else "uploads"
