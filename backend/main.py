@@ -27,9 +27,8 @@ from app.modules.users.routes import router as users_router
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Ensure upload directories exist
+    # Ensure upload directory exists
     os.makedirs(settings.UPLOAD_DIR, exist_ok=True)
-    os.makedirs(settings.PROFILES_DIR, exist_ok=True)
 
     # Create tables asynchronously
     async with engine.begin() as conn:
@@ -65,22 +64,16 @@ async def genai_exception_handler(request: Request, exc: errors.APIError):
     )
 
 
-# Support multiple comma-separated origins for CORS
-allowed_origins = [origin.strip() for origin in settings.FRONTEND_URL.split(",") if origin.strip()]
-if not allowed_origins:
-    allowed_origins = ["http://localhost:3000"]
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=[settings.FRONTEND_URL],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-upload_base = settings.UPLOAD_BASE_DIR
-os.makedirs(upload_base, exist_ok=True)
-app.mount("/uploads", StaticFiles(directory=upload_base), name="uploads")
+os.makedirs("uploads", exist_ok=True)
+app.mount("/uploads", StaticFiles(directory="uploads"), name="uploads")
 
 app.include_router(auth_router)
 app.include_router(budget_router)

@@ -9,7 +9,7 @@ from typing import Literal, cast
 import numpy as np
 import pandas as pd
 from anyio.to_thread import run_sync
-from fastapi import APIRouter, BackgroundTasks, File, HTTPException, Query, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, HTTPException, Query, UploadFile, status
 from fastapi.responses import StreamingResponse
 from google import genai
 from google.genai import types
@@ -106,97 +106,6 @@ async def create_transaction(
             )
 
     return transaction
-
-
-@router.post("/scan")
-@router.post("/scan/")
-async def scan_receipt(
-    db: DBSession,
-    user_id: CurrentUserID,
-    file: UploadFile = File(...),
-):
-    if (
-        not file.filename
-        or not file.content_type
-        or not file.content_type.startswith("image/")
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="File must be an image with a valid filename",
-        )
-
-    # 1. Save File
-    upload_path = Path(settings.UPLOAD_DIR)
-    upload_path.mkdir(parents=True, exist_ok=True)
-
-    file_ext = Path(cast(str, file.filename)).suffix
-    file_name = f"{uuid.uuid4()}{file_ext}"
-    full_path = upload_path / file_name
-
-    image_data = await file.read()
-    with full_path.open("wb") as buffer:
-        buffer.write(image_data)
-
-    file_url = f"/uploads/receipts/{file_name}"
-
-    # 2. Get User Categories for context
-    stmt = select(Category.name).where(
-        Category.user_id == user_id, Category.type == TransactionType.EXPENSE
-    )
-    result = await db.execute(stmt)
-    cat_names = list(result.scalars().all())
-
-    if DEFAULT_CATEGORY not in cat_names:
-        cat_names.append(DEFAULT_CATEGORY)
-
-    # 3. AI Analysis
-    client = genai.Client(api_key=settings.GEMINI_API_KEY)
-
-    prompt = f"""
-    Analyze this receipt image and break it down into logical expense items based on their categories.
-
-    Rules:
-    1. Identify items on the receipt and group them by these categories: {cat_names}.
-    2. If multiple items belong to the same category (e.g., Maggi and Milk both in 'Groceries'), you can group them into one line item.
-    3. For each item/group, extract the specific amount.
-    4. The sum of all items must equal the grand total on the receipt.
-    5. Use '{DEFAULT_CATEGORY}' if an item doesn't fit anywhere else.
-    6. Extract the transaction date.
-
-    Return the data structured as a list of items, each with item_name, amount, category, and note.
-    """
-
-    try:
-        image_part = types.Part.from_bytes(data=image_data, mime_type=file.content_type)
-
-        def _generate_receipt_analysis():
-            return client.models.generate_content(
-                model=settings.GEMINI_MODEL_ID,
-                contents=[image_part, prompt],
-                config={
-                    "response_mime_type": "application/json",
-                    "response_json_schema": MultiReceiptAnalysis.model_json_schema(),
-                },
-            )
-
-        response = await run_sync(_generate_receipt_analysis)
-
-        if not response.text:
-            raise ValueError("Empty response from AI")
-
-        analysis = MultiReceiptAnalysis.model_validate_json(response.text)
-        return {
-            "receipt_url": file_url,
-            "date": analysis.date,
-            "total_on_receipt": analysis.total_amount_on_receipt,
-            "suggested_transactions": analysis.items,
-        }
-
-    except Exception as e:
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to scan receipt: {str(e)}",
-        )
 
 
 @router.get("/", response_model=list[TransactionResponse])
@@ -549,6 +458,94 @@ async def get_category_proportions(
     return {"data": data}
 
 
+@router.post("/scan")
+async def scan_receipt(
+    file: UploadFile,
+    db: DBSession,
+    user_id: CurrentUserID,
+):
+    if (
+        not file.filename
+        or not file.content_type
+        or not file.content_type.startswith("image/")
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="File must be an image with a valid filename",
+        )
+
+    # 1. Save File
+    upload_path = Path(settings.UPLOAD_DIR)
+    upload_path.mkdir(parents=True, exist_ok=True)
+
+    file_ext = Path(cast(str, file.filename)).suffix
+    file_name = f"{uuid.uuid4()}{file_ext}"
+    full_path = upload_path / file_name
+
+    image_data = await file.read()
+    with full_path.open("wb") as buffer:
+        buffer.write(image_data)
+
+    file_url = f"/uploads/receipts/{file_name}"
+
+    # 2. Get User Categories for context
+    stmt = select(Category.name).where(
+        Category.user_id == user_id, Category.type == TransactionType.EXPENSE
+    )
+    result = await db.execute(stmt)
+    cat_names = list(result.scalars().all())
+
+    if DEFAULT_CATEGORY not in cat_names:
+        cat_names.append(DEFAULT_CATEGORY)
+
+    # 3. AI Analysis
+    client = genai.Client(api_key=settings.GEMINI_API_KEY)
+
+    prompt = f"""
+    Analyze this receipt image and break it down into logical expense items based on their categories.
+
+    Rules:
+    1. Identify items on the receipt and group them by these categories: {cat_names}.
+    2. If multiple items belong to the same category (e.g., Maggi and Milk both in 'Groceries'), you can group them into one line item.
+    3. For each item/group, extract the specific amount.
+    4. The sum of all items must equal the grand total on the receipt.
+    5. Use '{DEFAULT_CATEGORY}' if an item doesn't fit anywhere else.
+    6. Extract the transaction date.
+
+    Return the data structured as a list of items, each with item_name, amount, category, and note.
+    """
+
+    try:
+        image_part = types.Part.from_bytes(data=image_data, mime_type=file.content_type)
+
+        def _generate_receipt_analysis():
+            return client.models.generate_content(
+                model=settings.GEMINI_MODEL_ID,
+                contents=[image_part, prompt],
+                config={
+                    "response_mime_type": "application/json",
+                    "response_json_schema": MultiReceiptAnalysis.model_json_schema(),
+                },
+            )
+
+        response = await run_sync(_generate_receipt_analysis)
+
+        if not response.text:
+            raise ValueError("Empty response from AI")
+
+        analysis = MultiReceiptAnalysis.model_validate_json(response.text)
+        return {
+            "receipt_url": file_url,
+            "date": analysis.date,
+            "total_on_receipt": analysis.total_amount_on_receipt,
+            "suggested_transactions": analysis.items,
+        }
+
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to scan receipt: {str(e)}",
+        )
 
 
 @router.get("/recurring/upcoming", response_model=list[RecurringExpenseResponse])

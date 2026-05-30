@@ -16,15 +16,10 @@ const nextConfig: NextConfig = {
         pathname: '/uploads/**',
       },
       {
+        // Render backend — replace with your actual Render subdomain
         protocol: 'https',
         hostname: '*.onrender.com',
         pathname: '/uploads/**',
-      },
-      {
-        // Supabase Storage
-        protocol: 'https',
-        hostname: '*.supabase.co',
-        pathname: '/storage/v1/object/public/**',
       },
       {
         protocol: 'https',
