@@ -231,9 +231,14 @@ export const transactionService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const url = `${BASE_URL}/transactions/scan`;
+    const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null;
+    const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+    const url = `${cleanBaseUrl}/transactions/scan`;
     const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       credentials: 'include',
       body: formData,
     });
@@ -394,8 +399,14 @@ export const userService = {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch(`${BASE_URL}/users/me/picture`, {
+    const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null;
+    const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
+    const url = `${cleanBaseUrl}/users/me/picture`;
+    const response = await fetch(url, {
       method: 'POST',
+      headers: {
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
       credentials: 'include',
       body: formData,
     });
