@@ -27,7 +27,17 @@ class Settings:
     GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
     GEMINI_MODEL_ID: str = "gemini-2.5-flash"
 
-    UPLOAD_DIR: str = "uploads/receipts"
+    @property
+    def UPLOAD_BASE_DIR(self) -> str:
+        return "/tmp/uploads" if os.getenv("VERCEL") == "1" else "uploads"
+
+    @property
+    def UPLOAD_DIR(self) -> str:
+        return f"{self.UPLOAD_BASE_DIR}/receipts"
+
+    @property
+    def PROFILES_DIR(self) -> str:
+        return f"{self.UPLOAD_BASE_DIR}/profiles"
 
     @property
     def ASYNC_DATABASE_URL(self) -> str:

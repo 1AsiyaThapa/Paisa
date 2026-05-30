@@ -233,7 +233,7 @@ export const transactionService = {
 
     const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null;
     const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-    const url = `${cleanBaseUrl}/transactions/scan`;
+    const url = `${cleanBaseUrl}/transactions/scan/`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -401,7 +401,7 @@ export const userService = {
 
     const token = typeof window !== 'undefined' ? localStorage.getItem(STORAGE_KEYS.AUTH_TOKEN) : null;
     const cleanBaseUrl = BASE_URL.endsWith('/') ? BASE_URL.slice(0, -1) : BASE_URL;
-    const url = `${cleanBaseUrl}/users/me/picture`;
+    const url = `${cleanBaseUrl}/users/me/picture/`;
     const response = await fetch(url, {
       method: 'POST',
       headers: {
